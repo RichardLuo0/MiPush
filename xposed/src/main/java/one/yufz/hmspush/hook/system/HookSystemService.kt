@@ -5,10 +5,12 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Binder
 import de.robv.android.xposed.XposedHelpers
+import one.yufz.hmspush.common.HMS_PACKAGE_NAME
 import one.yufz.hmspush.common.IS_SYSTEM_HOOK_READY
 import one.yufz.hmspush.hook.XLog
 import one.yufz.xposed.callMethod
 import one.yufz.xposed.get
+import one.yufz.xposed.hookAllMethods
 import one.yufz.xposed.hookMethod
 
 class HookSystemService {
@@ -54,6 +56,17 @@ class HookSystemService {
 
         val classShortcutService = XposedHelpers.findClass("com.android.server.pm.ShortcutService", classLoader)
         ShortcutPermissionHooker.hook(classShortcutService)
+
+        // make mipush globally visible
+        val getPackageNameM = XposedHelpers.findClass("com.android.server.pm.pkg.PackageState", classLoader).getMethod("getPackageName")
+        XposedHelpers.findClass("com.android.server.pm.AppsFilterBase", classLoader)?.hookAllMethods("shouldFilterApplication") {
+            doBefore {
+                val targetPkgSetting = args[3] ?: return@doBefore
+                if (getPackageNameM.invoke(targetPkgSetting) == HMS_PACKAGE_NAME) {
+                    result = false
+                }
+            }
+        }
     }
 
     private fun hookSystemReadyFlag(stubClass: Class<Any>) {
