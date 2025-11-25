@@ -60,11 +60,11 @@ class HookSystemService {
         // make mipush globally visible
         val getPackageNameM = XposedHelpers.findClass("com.android.server.pm.pkg.PackageState", classLoader).getMethod("getPackageName")
         XposedHelpers.findClass("com.android.server.pm.AppsFilterBase", classLoader)?.hookAllMethods("shouldFilterApplication") {
-            doBefore {
-                val targetPkgSetting = args[3] ?: return@doBefore
-                if (getPackageNameM.invoke(targetPkgSetting) == HMS_PACKAGE_NAME) {
-                    result = false
-                }
+            doAfter {
+                if (result == false) return@doAfter
+                val targetPkgSetting = args[3] ?: return@doAfter
+                if (getPackageNameM.invoke(targetPkgSetting) == HMS_PACKAGE_NAME)
+                  result = false
             }
         }
     }
